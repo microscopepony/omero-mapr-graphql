@@ -1,0 +1,4 @@
+graphene
+Flask
+Flask-GraphQL
+#omero
