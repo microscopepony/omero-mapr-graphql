@@ -55,11 +55,78 @@ class Phenotype(MaprAnnotation):
         interfaces = (Annotation,)
 
 
+class Project(graphene.ObjectType):
+    id = graphene.Int(required=True)
+    name = graphene.String(required=True)
+    datasets = graphene.List(graphene.NonNull(lambda: Dataset))
+
+    def resolve_datasets(self, info):
+        qs = info.context.get('qs')
+        p = omero.sys.ParametersI()
+        p.addId(self.id)
+        q = """
+            SELECT pdl.child.id, pdl.child.name
+            FROM ProjectDatasetLink pdl
+            WHERE pdl.parent.id=:id
+            ORDER BY id ASC
+            """
+        rs = qs.projection(q, p)
+        return (Dataset(*r) for r in unwrap(rs))
+
+
+class Dataset(graphene.ObjectType):
+    id = graphene.Int(required=True)
+    name = graphene.String(required=True)
+    projects = graphene.List(graphene.NonNull(lambda: Project))
+    images = graphene.List(graphene.NonNull(lambda: Image))
+
+    def resolve_projects(self, info):
+        qs = info.context.get('qs')
+        p = omero.sys.ParametersI()
+        p.addId(self.id)
+        q = """
+            SELECT pdl.parent.id, pdl.parent.name
+            FROM ProjectDatasetLink pdl
+            WHERE pdl.child.id=:id
+            ORDER BY id ASC
+            """
+        rs = qs.projection(q, p)
+        return (Dataset(*r) for r in unwrap(rs))
+
+    def resolve_images(self, info):
+        qs = info.context.get('qs')
+        p = omero.sys.ParametersI()
+        p.addId(self.id)
+        q = """
+            SELECT dil.child.id, dil.child.name
+            FROM DatasetImageLink dil
+            WHERE dil.parent.id=:id
+            ORDER BY id ASC
+            """
+        rs = qs.projection(q, p)
+        return (Image(*r) for r in unwrap(rs))
+
+
 class Image(graphene.ObjectType):
     id = graphene.Int(required=True)
     name = graphene.String(required=True)
+    datasets = graphene.List(
+        graphene.NonNull(lambda: Dataset))
     annotations = graphene.List(
         graphene.NonNull(lambda: Annotation), mapr=AnnotationType())
+
+    def resolve_datasets(self, info):
+        qs = info.context.get('qs')
+        p = omero.sys.ParametersI()
+        p.addId(self.id)
+        q = """
+            SELECT dil.parent.id, dil.parent.name
+            FROM DatasetImageLink dil
+            WHERE dil.child.id=:id
+            ORDER BY id ASC
+            """
+        rs = qs.projection(q, p)
+        return (Dataset(*r) for r in unwrap(rs))
 
     def resolve_annotations(self, info, mapr=None):
         qs = info.context.get('qs')
@@ -94,6 +161,8 @@ class Image(graphene.ObjectType):
 
 class Query(graphene.ObjectType):
     image = graphene.Field(Image, id=graphene.Int())
+    dataset = graphene.Field(Dataset, id=graphene.Int())
+    project = graphene.Field(Project, id=graphene.Int())
     gene = graphene.List(Gene, key=graphene.String(), value=graphene.String())
 
     def resolve_image(self, info, id):
@@ -107,6 +176,31 @@ class Query(graphene.ObjectType):
             """, p)
         if rs:
             return Image(*unwrap(rs[0]))
+
+    def resolve_dataset(self, info, id):
+        qs = info.context.get('qs')
+        p = omero.sys.ParametersI()
+        p.addId(id)
+        rs = qs.projection("""
+            SELECT id, name
+            FROM Dataset
+            WHERE id=:id
+            """, p)
+        if rs:
+            return Dataset(*unwrap(rs[0]))
+
+    def resolve_project(self, info, id):
+        qs = info.context.get('qs')
+        p = omero.sys.ParametersI()
+        p.addId(id)
+        rs = qs.projection("""
+            SELECT id, name
+            FROM Project
+            WHERE id=:id
+            """, p)
+        if rs:
+            return Project(*unwrap(rs[0]))
+
 
     def resolve_gene(self, info, key, value):
         qs = info.context.get('qs')

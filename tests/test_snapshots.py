@@ -33,6 +33,52 @@ def test_image_phenotype(omero, snapshot):
     }""", context=omero))
 
 
+def test_project(omero, snapshot):
+    client = Client(schema)
+    snapshot.assert_match(client.execute("""{
+      project(id: 151) {
+        id
+        name
+        datasets {
+          id
+          name
+        }
+      }
+    }""", context=omero))
+
+
+def test_dataset(omero, snapshot):
+    client = Client(schema)
+    snapshot.assert_match(client.execute("""{
+      dataset(id: 369) {
+        id
+        name
+        images {
+          id
+          name
+        }
+        projects {
+          id
+          name
+        }
+      }
+    }""", context=omero))
+
+
+def test_image_dataset(omero, snapshot):
+    client = Client(schema)
+    snapshot.assert_match(client.execute("""{
+      image(id: 1920095) {
+        id
+        name
+        datasets {
+          id
+          name
+        }
+      }
+    }""", context=omero))
+
+
 def test_gene(omero, snapshot):
     client = Client(schema)
     snapshot.assert_match(client.execute("""{
