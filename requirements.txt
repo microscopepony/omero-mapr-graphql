@@ -2,3 +2,5 @@ graphene
 Flask
 Flask-GraphQL
 #omero
+flake8
+pytest
