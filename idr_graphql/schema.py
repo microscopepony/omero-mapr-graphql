@@ -24,7 +24,8 @@ class Annotation(graphene.Interface):
     value = graphene.List(graphene.NonNull(lambda: NameValue))
 
 
-class AbstractAnnotation(graphene.AbstractType):
+class MaprAnnotation(graphene.ObjectType):
+
     id = graphene.Int(required=True)
     name = graphene.String(required=True)
     images = graphene.List(graphene.NonNull(lambda: Image))
@@ -44,16 +45,14 @@ class AbstractAnnotation(graphene.AbstractType):
         return (Image(*r) for r in unwrap(rs))
 
 
-class Gene(graphene.ObjectType, AbstractAnnotation):
+class Gene(MaprAnnotation):
     class Meta:
         interfaces = (Annotation,)
-    ensemblid = graphene.String(required=True)
 
 
-class Phenotype(graphene.ObjectType, AbstractAnnotation):
+class Phenotype(MaprAnnotation):
     class Meta:
         interfaces = (Annotation,)
-    cmpoterm = graphene.String(required=True)
 
 
 class Image(graphene.ObjectType):

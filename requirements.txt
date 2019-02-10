@@ -1,6 +1,6 @@
-graphene
-Flask
-Flask-GraphQL
+graphene>=2.1.0
+Flask>=1.0.0
+Flask-GraphQL>=2.0.0
 #omero
 flake8
 pytest
